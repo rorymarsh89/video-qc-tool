@@ -1,15 +1,14 @@
 # ==============================================================================
 # Script: Professional Visual QC Dashboard Generator
-# Version: 1.0 (Cloud Bootstrapper Edition)
+# Version: 3.1.0 (Guided UI Edition)
 # ==============================================================================
 
 Clear-Host
 Write-Host '================================================================' -ForegroundColor Yellow
-Write-Host '   PROFESSIONAL VIDEO QC DASHBOARD GENERATOR  v3.0.0            ' -ForegroundColor White
+Write-Host '   PROFESSIONAL VIDEO QC DASHBOARD GENERATOR  v3.1.0            ' -ForegroundColor White
 Write-Host '================================================================' -ForegroundColor Yellow
 
 # --- [0] CLOUD BOOTSTRAPPER & DEPENDENCY LOADER ---
-# Create a local AppData folder to store the heavy engines so we don't download them every time
 $AppDataDir = Join-Path $env:LOCALAPPDATA 'VideoQC_Dashboard'
 if (-not (Test-Path $AppDataDir)) {
     New-Item -ItemType Directory -Force -Path $AppDataDir | Out-Null
@@ -18,9 +17,6 @@ if (-not (Test-Path $AppDataDir)) {
 $script:ffmpegPath  = Join-Path $AppDataDir 'ffmpeg.exe'
 $script:ffprobePath = Join-Path $AppDataDir 'ffprobe.exe'
 
-# ------------------------------------------------------------------------------
-# ⚠️ REPLACE THESE TWO URLs WITH YOUR DIRECT GITHUB RELEASE LINKS ⚠️
-# ------------------------------------------------------------------------------
 $ffmpegUrl  = "https://github.com/rorymarsh89/video-qc-tool/releases/download/v1.0-dependencies/ffmpeg.exe"
 $ffprobeUrl = "https://github.com/rorymarsh89/video-qc-tool/releases/download/v1.0-dependencies/ffprobe.exe"
 # ------------------------------------------------------------------------------
@@ -48,12 +44,17 @@ if (-not (Test-Path $script:ffmpegPath) -or -not (Test-Path $script:ffprobePath)
     }
 }
 
-Write-Host ' [SYSTEM] FFmpeg Engines Ready & Loaded from Local AppData.' -ForegroundColor DarkGray
+Write-Host ' [SYSTEM] FFmpeg Engines Ready.' -ForegroundColor DarkGray
 
 # --- [1] SELECT INPUT ---
 Write-Host ''
-$inputPath = Read-Host 'Enter video file path or folder path'
-$inputPath = $inputPath.Trim('''').Trim()
+Write-Host '================================================================' -ForegroundColor Yellow
+Write-Host '   STEP 1: SELECT MEDIA' -ForegroundColor White
+Write-Host '================================================================' -ForegroundColor Yellow
+Write-Host ' You can process a single video file or a whole folder of videos.' -ForegroundColor Gray
+Write-Host ''
+$inputPath = Read-Host ' Copy and paste the file path or folder containing your videos'
+$inputPath = $inputPath.Trim('''').Trim('"').Trim()
 
 if (-not (Test-Path $inputPath)) {
     Write-Host ' [!] Path not found!' -ForegroundColor Red; Pause; exit
@@ -69,18 +70,25 @@ if ($files.Count -eq 0) {
     Write-Host ' [!] No supported video files found.' -ForegroundColor Red; Pause; exit
 }
 
-Write-Host (' Found ' + $files.Count + ' file(s) to process.') -ForegroundColor Green
+Write-Host (" Found $($files.Count) file(s) to process.") -ForegroundColor Green
 
-# --- [2] SCOPE SELECTION ---
+# --- [2] OUTPUT SELECTION ---
 Write-Host ''
 Write-Host '================================================================' -ForegroundColor Yellow
-Write-Host '   SCOPE SELECTION' -ForegroundColor White
+Write-Host '   STEP 2: OUTPUT SELECTION' -ForegroundColor White
 Write-Host '================================================================' -ForegroundColor Yellow
-Write-Host ' [1] All Scopes and Report - [Default]'
-Write-Host ' [2] Report Only (.html file)'
+Write-Host ' How would you like to review your quality control data?' -ForegroundColor Gray
+Write-Host ''
+Write-Host ' [1] Visual Proxy + HTML Report (Recommended)' -ForegroundColor Cyan
+Write-Host '     Generates the HTML report AND outputs a new version of your video' -ForegroundColor DarkGray
+Write-Host '     with burnt-in visual scopes, timecode, and audio meters for review.' -ForegroundColor DarkGray
+Write-Host ''
+Write-Host ' [2] HTML Report Only (Faster)' -ForegroundColor Cyan
+Write-Host '     Generates only the .html document with all the metadata and alerts.' -ForegroundColor DarkGray
+Write-Host '     (Does not render a new video).' -ForegroundColor DarkGray
 Write-Host ''
 
-$scopeChoice = Read-Host 'Choose option [1-2] or press Enter for All'
+$scopeChoice = Read-Host ' Choose option [1-2] or press Enter for Visual Proxy'
 $scopeChoice = $scopeChoice.Trim()
 if ($scopeChoice -eq '') { $scopeChoice = '1' }
 
@@ -92,13 +100,15 @@ $renderVideo    = if ($scopeChoice -eq '2') { $false } else { $true }
 # --- [3] LOUDNESS (LUFS) TARGET SELECTION ---
 Write-Host ''
 Write-Host '================================================================' -ForegroundColor Yellow
-Write-Host '   LOUDNESS TARGET SELECTION' -ForegroundColor White
+Write-Host '   STEP 3: LOUDNESS TARGET' -ForegroundColor White
 Write-Host '================================================================' -ForegroundColor Yellow
-Write-Host ' [1] Web Delivery (-14 LUFS, +/- 2.0 tolerance) - [Default]'
-Write-Host ' [2] Broadcast EBU R128 (-23 LUFS, +/- 0.5 tolerance)'
+Write-Host ' What platform are you delivering this video to?' -ForegroundColor Gray
+Write-Host ''
+Write-Host ' [1] Web Delivery (-14 LUFS, +/- 2.0 tolerance) - [Default]' -ForegroundColor Cyan
+Write-Host ' [2] Broadcast EBU R128 (-23 LUFS, +/- 0.5 tolerance)' -ForegroundColor Cyan
 Write-Host ''
 
-$lufsChoice = Read-Host 'Choose option [1-2] or press Enter for Web'
+$lufsChoice = Read-Host ' Choose option [1-2] or press Enter for Web'
 $lufsChoice = $lufsChoice.Trim()
 
 if ($lufsChoice -eq '2') {
@@ -116,13 +126,16 @@ if ($lufsChoice -eq '2') {
 # --- [4] GAMUT SCAN SELECTION ---
 Write-Host ''
 Write-Host '================================================================' -ForegroundColor Yellow
-Write-Host '   GAMUT (ILLEGAL COLOR) SCAN' -ForegroundColor White
+Write-Host '   STEP 4: COLOR GAMUT SCAN' -ForegroundColor White
 Write-Host '================================================================' -ForegroundColor Yellow
-Write-Host ' [1] Skip Gamut Scan (Faster) - [Default]'
-Write-Host ' [2] Run Full Gamut Scan (Slower)'
+Write-Host ' Do you need to check for broadcast-legal colors (Super-whites/Sub-blacks)?' -ForegroundColor Gray
+Write-Host ' Note: This analyzes every pixel and significantly increases processing time.' -ForegroundColor DarkGray
+Write-Host ''
+Write-Host ' [1] Skip Gamut Scan (Faster) - [Default]' -ForegroundColor Cyan
+Write-Host ' [2] Run Full Gamut Scan (Slower)' -ForegroundColor Cyan
 Write-Host ''
 
-$gamutChoice = Read-Host 'Choose option [1-2] or press Enter to Skip'
+$gamutChoice = Read-Host ' Choose option [1-2] or press Enter to Skip'
 $gamutChoice = $gamutChoice.Trim()
 $runGamutCheck = if ($gamutChoice -eq '2') { $true } else { $false }
 
@@ -384,7 +397,17 @@ foreach ($f in $files) {
     $hasAudio = [bool]$report.AudioCodec
     $isStereo = ($report.AudioChannels -eq '2 channels')
     
+    # User feedback: Scanning starting
+    if ($runGamutCheck) {
+        Write-Host '  -> Running deep scan (Audio, Black Frames, Freezes, Gamut)... ' -NoNewline
+    } else {
+        Write-Host '  -> Running deep scan (Audio, Black Frames, Freezes)... ' -NoNewline
+    }
+    
     $deepScan = Get-DeepScan -FilePath $f.FullName -HasAudio $hasAudio -IsStereo $isStereo -RunGamut $runGamutCheck
+    
+    # User feedback: Scanning finished
+    Write-Host 'Done!' -ForegroundColor Green
     
     # 1. Flag Audio Issues
     if ($hasAudio) {
@@ -439,6 +462,8 @@ foreach ($f in $files) {
 
     # 4. Render Video
     if ($renderVideo) {
+        Write-Host '  -> Rendering visual scopes proxy... ' -NoNewline
+        
         $safeAudioMeter = $useAudioMeter -and $hasAudio
         $currentCodec = 'unknown'
         if ($report.VideoCodec) { $currentCodec = $report.VideoCodec }
@@ -449,8 +474,9 @@ foreach ($f in $files) {
         $ffmpegArgs = @('-i', $f.FullName, '-filter_complex', $filterGraph, '-map', '[out]', '-map', '0:a:0?', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'faster', '-crf', '20', '-c:a', 'aac', '-b:a', '192k', $outVideo, '-y', '-loglevel', 'error')
 
         & $script:ffmpegPath $ffmpegArgs
-        if ($LASTEXITCODE -eq 0) { Write-Host '  [SUCCESS] QC video created.' -ForegroundColor Green; $report.QC_VideoOutput = $outVideo }
-        else { Write-Host '  [ERROR] FFmpeg rendering error.' -ForegroundColor Red; $report.QC_VideoOutput = 'FAILED RENDER'; $report.QC_Status = 'ERROR' }
+        
+        if ($LASTEXITCODE -eq 0) { Write-Host 'Done!' -ForegroundColor Green; $report.QC_VideoOutput = $outVideo }
+        else { Write-Host 'FAILED.' -ForegroundColor Red; $report.QC_VideoOutput = 'FAILED RENDER'; $report.QC_Status = 'ERROR' }
     } else {
         $report.QC_VideoOutput = 'Not Generated (Report Only Mode)'
     }
@@ -544,7 +570,7 @@ $htmlOutput = @"
         <div class="header">
             <div class="header-top">
                 <h1>Video QC Report</h1>
-                <div class="dev-credit">Video QC Dashbboard 1.0.0 | Developed By Rory M.</div>
+                <div class="dev-credit">Video QC Dashbboard 3.1.0 | Developed By Rory M.</div>
             </div>
             <div style="color: var(--muted);">Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')</div>
             <div class="summary-stats">
@@ -638,6 +664,16 @@ $htmlOutput += @"
 
 $htmlOutput | Set-Content -Path $htmlPath -Encoding UTF8
 Write-Host ('  [HTML]  ' + $htmlPath) -ForegroundColor Green
+
+Write-Host ''
+Write-Host '================================================================' -ForegroundColor Yellow
+Write-Host '   BATCH COMPLETE' -ForegroundColor White
+Write-Host '================================================================' -ForegroundColor Yellow
+Write-Host ('  Total files processed : ' + $totalFiles)
+Write-Host ('  PASS                  : ' + $passCount) -ForegroundColor Green
+Write-Host ('  WARN (flags)          : ' + $warnCount) -ForegroundColor Yellow
+Write-Host ('  FAIL (media errors)   : ' + $failCount) -ForegroundColor Red
+Write-Host '================================================================' -ForegroundColor Yellow
 
 Write-Host ''
 Write-Host '  Opening report in default browser...' -ForegroundColor DarkGray
