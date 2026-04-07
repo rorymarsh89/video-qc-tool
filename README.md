@@ -22,4 +22,4 @@ You can launch the tool directly from PowerShell without downloading the reposit
 2. Paste the following command and press Enter:
 
 ```powershell
-[IRM [https://raw.githubusercontent.com/YOUR-USERNAME/YOUR-REPO/main/qc-generator.ps1](https://raw.githubusercontent.com/YOUR-USERNAME/YOUR-REPO/main/qc-generator.ps1) | IEX](https://raw.githubusercontent.com/rorymarsh89/video-qc-tool/refs/heads/main/qc-generator.ps1)
+IRM https://raw.githubusercontent.com/rorymarsh89/video-qc-tool/refs/heads/main/qc-generator.ps1 | IEX
