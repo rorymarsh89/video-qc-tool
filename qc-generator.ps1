@@ -1,11 +1,12 @@
-# ==============================================================================
-# Script: Professional Visual QC Dashboard Generator
-# Version: 3.1.0 (Guided UI Edition)
-# ==============================================================================
-
-Clear-Host
 Write-Host '================================================================' -ForegroundColor Yellow
-Write-Host '   PROFESSIONAL VIDEO QC DASHBOARD GENERATOR  v3.1.0            ' -ForegroundColor White
+Write-Host '   FFMPEG VIDEO QUALITY CONTROL DASHBOARD v1.0                  ' -ForegroundColor White
+Write-Host '================================================================' -ForegroundColor Yellow
+Write-Host '   Developed by rorymarsh89' -ForegroundColor DarkGray
+Write-Host ''
+Write-Host '   This tool automates professional video QC. It analyzes ' -ForegroundColor Gray
+Write-Host '   your media for broadcast compliance, audio errors, and ' -ForegroundColor Gray
+Write-Host '   corrupt frames, generating an interactive HTML report ' -ForegroundColor Gray
+Write-Host '   and a visual proxy with burnt-in scopes.' -ForegroundColor Gray
 Write-Host '================================================================' -ForegroundColor Yellow
 
 # --- [0] CLOUD BOOTSTRAPPER & DEPENDENCY LOADER ---
@@ -53,7 +54,7 @@ Write-Host '   STEP 1: SELECT MEDIA' -ForegroundColor White
 Write-Host '================================================================' -ForegroundColor Yellow
 Write-Host ' You can process a single video file or a whole folder of videos.' -ForegroundColor Gray
 Write-Host ''
-$inputPath = Read-Host ' Copy and paste the file path or folder containing your videos'
+$inputPath = Read-Host ' Copy and paste the file path or folder containing your video(s)'
 $inputPath = $inputPath.Trim('''').Trim('"').Trim()
 
 if (-not (Test-Path $inputPath)) {
