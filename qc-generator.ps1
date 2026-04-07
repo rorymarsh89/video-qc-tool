@@ -1,8 +1,3 @@
-# ==============================================================================
-# Script: Professional Visual QC Dashboard Generator
-# Version: 3.2.0 (Added Permission & Cleanup Prompts)
-# ==============================================================================
-
 Clear-Host
 Write-Host '================================================================' -ForegroundColor Yellow
 Write-Host '   FFMPEG VIDEO QUALITY CONTROL DASHBOARD v3.2.0                ' -ForegroundColor White
