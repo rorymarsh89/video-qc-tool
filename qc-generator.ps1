@@ -1,5 +1,11 @@
+# ==============================================================================
+# Script: Professional Visual QC Dashboard Generator
+# Version: 3.2.0 (Added Permission & Cleanup Prompts)
+# ==============================================================================
+
+Clear-Host
 Write-Host '================================================================' -ForegroundColor Yellow
-Write-Host '   FFMPEG VIDEO QUALITY CONTROL DASHBOARD v1.0                  ' -ForegroundColor White
+Write-Host '   FFMPEG VIDEO QUALITY CONTROL DASHBOARD v3.2.0                ' -ForegroundColor White
 Write-Host '================================================================' -ForegroundColor Yellow
 Write-Host '   Developed by rorymarsh89' -ForegroundColor DarkGray
 Write-Host ''
@@ -18,23 +24,38 @@ if (-not (Test-Path $AppDataDir)) {
 $script:ffmpegPath  = Join-Path $AppDataDir 'ffmpeg.exe'
 $script:ffprobePath = Join-Path $AppDataDir 'ffprobe.exe'
 
+# ------------------------------------------------------------------------------
+# GITHUB RELEASE LINKS
+# ------------------------------------------------------------------------------
 $ffmpegUrl  = "https://github.com/rorymarsh89/video-qc-tool/releases/download/v1.0-dependencies/ffmpeg.exe"
 $ffprobeUrl = "https://github.com/rorymarsh89/video-qc-tool/releases/download/v1.0-dependencies/ffprobe.exe"
 # ------------------------------------------------------------------------------
 
 if (-not (Test-Path $script:ffmpegPath) -or -not (Test-Path $script:ffprobePath)) {
     Write-Host ''
-    Write-Host ' [SYSTEM] First-time setup: Downloading FFmpeg engines...' -ForegroundColor Yellow
-    Write-Host '          This may take a minute depending on your connection.' -ForegroundColor DarkGray
+    Write-Host ' [SYSTEM] First-time setup required.' -ForegroundColor Yellow
+    Write-Host ' This tool requires FFmpeg and FFprobe (approx. 150MB) to analyze and' -ForegroundColor Gray
+    Write-Host ' process your video files. They will be downloaded to a temporary' -ForegroundColor Gray
+    Write-Host ' local AppData folder on your computer.' -ForegroundColor Gray
+    Write-Host ''
+    
+    $dlChoice = Read-Host ' Do you grant permission to download these files now? [Y/N]'
+    if ($dlChoice -notmatch '^y') {
+        Write-Host ' [!] Setup cancelled. The tool cannot run without these files.' -ForegroundColor Red
+        Pause; exit
+    }
+
+    Write-Host ''
+    Write-Host '  -> Downloading FFmpeg engines... This may take a minute.' -ForegroundColor DarkGray
     
     try {
         if (-not (Test-Path $script:ffmpegPath)) {
-            Write-Host '  -> Downloading ffmpeg.exe... ' -NoNewline
+            Write-Host '     Fetching ffmpeg.exe... ' -NoNewline
             Invoke-WebRequest -Uri $ffmpegUrl -OutFile $script:ffmpegPath
             Write-Host 'Done!' -ForegroundColor Green
         }
         if (-not (Test-Path $script:ffprobePath)) {
-            Write-Host '  -> Downloading ffprobe.exe... ' -NoNewline
+            Write-Host '     Fetching ffprobe.exe... ' -NoNewline
             Invoke-WebRequest -Uri $ffprobeUrl -OutFile $script:ffprobePath
             Write-Host 'Done!' -ForegroundColor Green
         }
@@ -45,6 +66,7 @@ if (-not (Test-Path $script:ffmpegPath) -or -not (Test-Path $script:ffprobePath)
     }
 }
 
+Write-Host ''
 Write-Host ' [SYSTEM] FFmpeg Engines Ready.' -ForegroundColor DarkGray
 
 # --- [1] SELECT INPUT ---
@@ -54,7 +76,7 @@ Write-Host '   STEP 1: SELECT MEDIA' -ForegroundColor White
 Write-Host '================================================================' -ForegroundColor Yellow
 Write-Host ' You can process a single video file or a whole folder of videos.' -ForegroundColor Gray
 Write-Host ''
-$inputPath = Read-Host ' Copy and paste the file path or folder containing your video(s)'
+$inputPath = Read-Host ' Copy and paste the file path or folder containing your videos'
 $inputPath = $inputPath.Trim('''').Trim('"').Trim()
 
 if (-not (Test-Path $inputPath)) {
@@ -417,7 +439,6 @@ foreach ($f in $files) {
         if ($deepScan.I -ne 'N/A') {
             $lufsVal = 0.0
             if ([double]::TryParse($deepScan.I, [ref]$lufsVal)) {
-                # Evaluates against dynamically chosen min/max ranges
                 if ($lufsVal -lt $minLUFS -or $lufsVal -gt $maxLUFS) {
                     $report.QC_Flags += ('WARN: Out of Spec Loudness (' + $report.IntegratedLUFS + '. Target: ' + $targetLUFS + ' LUFS)')
                     if ($report.QC_Status -eq 'PASS') { $report.QC_Status = 'WARN' }
@@ -571,7 +592,7 @@ $htmlOutput = @"
         <div class="header">
             <div class="header-top">
                 <h1>Video QC Report</h1>
-                <div class="dev-credit">Video QC Dashbboard 3.1.0 | Developed By Rory M.</div>
+                <div class="dev-credit">Video QC Dashbboard 3.2.0 | Developed By Rory M.</div>
             </div>
             <div style="color: var(--muted);">Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')</div>
             <div class="summary-stats">
@@ -665,6 +686,24 @@ $htmlOutput += @"
 
 $htmlOutput | Set-Content -Path $htmlPath -Encoding UTF8
 Write-Host ('  [HTML]  ' + $htmlPath) -ForegroundColor Green
+
+# --- [11] CLEANUP & FINISH ---
+Write-Host ''
+Write-Host '================================================================' -ForegroundColor Yellow
+Write-Host '   CLEANUP OPTIONS' -ForegroundColor White
+Write-Host '================================================================' -ForegroundColor Yellow
+Write-Host ' Would you like to remove the FFmpeg background engines?' -ForegroundColor Cyan
+Write-Host ' (Type Y to delete them and save 150MB of space, or N to keep them' -ForegroundColor DarkGray
+Write-Host ' so the tool loads instantly without downloading next time).' -ForegroundColor DarkGray
+Write-Host ''
+
+$cleanup = Read-Host ' Remove engines? [Y/N]'
+
+if ($cleanup -match '^y') {
+    Write-Host '  -> Cleaning up... ' -NoNewline
+    Remove-Item -Path $AppDataDir -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host 'Done!' -ForegroundColor Green
+}
 
 Write-Host ''
 Write-Host '================================================================' -ForegroundColor Yellow
